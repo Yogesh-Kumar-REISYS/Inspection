@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Kalect.Services.Entities;
@@ -315,6 +317,9 @@ namespace Kalect.Services
 
                 //SaveValidationSchema
                 DependencyService.Get<IKalectDependencyServices>().SaveFormsOnDevice(formEntity.ValidationSchema, assessmentMetadata.AssessmentTrackingNumber.ToString(), formEntity.FriendlyName, "ValidationSchema");
+
+                //SaveValidationSchema
+                DependencyService.Get<IKalectDependencyServices>().SaveFormsOnDevice(formEntity.WebAttachments, assessmentMetadata.AssessmentTrackingNumber.ToString(), formEntity.FriendlyName, "WebAttachments");
             }
         }
 
@@ -323,22 +328,6 @@ namespace Kalect.Services
             return await DependencyService.Get<IKalectDependencyServices>().LoadAssessmentsMetadataFromDevice();
         }
 
-
-        /*public async Task SyncAssessment(AssessmentMetadataEntity assessmentMetadataEntity)
-        {
-            FormService formService = new FormService();
-            List<FormInstance> formInstances = formService.GetAllForms(assessmentMetadataEntity.AssessmentTrackingNumber.ToString());
-
-            foreach(Sections section in assessmentMetadataEntity.Sections)
-            {
-                FormInstance formInstance = new FormInstance();
-                formInstance = formInstances.Find(x => x.FriendlyName == section.SectionFriendlyName);
-
-                await formService.UpdateFormData(assessmentMetadataEntity.AssessmentId, formInstance.FormData);
-            }
-
-        }*/
-
         #endregion
 
         #region webAPI calls
@@ -346,8 +335,6 @@ namespace Kalect.Services
         private async Task<List<AssessmentEntity>> GetListOfAllAssignedAssessmentsFromServerAPICall()
         {
             var client = new HttpClient();
-            //var response = client.GetStringAsync("http://handbookwebapi.azurewebsites.net/api/assessment").Result;
-            //var response = client.GetStringAsync("http://fda-client-api20180827105916.azurewebsites.net/api/context").Result;
 
             var response = await client.GetStringAsync("https://fdainsp-ehbs-web.reisys.io/fda-client/api/context");
 
@@ -359,8 +346,6 @@ namespace Kalect.Services
         private async Task<List<AssessmentEntity>> GetListOfAllAssignedAssessmentsFromServerAPICall(string inspectorType)
         {
             var client = new HttpClient();
-            //var response = client.GetStringAsync("http://handbookwebapi.azurewebsites.net/api/assessment").Result;
-            //var response = client.GetStringAsync("http://fda-client-api20180827105916.azurewebsites.net/api/context").Result;
             string response = string.Empty;
             List<AssessmentEntity> assessmentResponse = new List<AssessmentEntity>();
 
@@ -380,6 +365,20 @@ namespace Kalect.Services
                 }
 
                 assessmentResponse = JsonConvert.DeserializeObject<List<AssessmentEntity>>(response);
+
+                foreach (AssessmentEntity assessment in assessmentResponse)
+                {
+                    AssessmentMetadataEntity metaData = JsonConvert.DeserializeObject<AssessmentMetadataEntity>(assessment.AssessmentMetadata);
+                    foreach (FormEntity form in assessment.Forms)
+                    {
+                        List<WebAttachmentEntity> webAttachments = JsonConvert.DeserializeObject<List<WebAttachmentEntity>>(form.WebAttachments);
+                        if (webAttachments.Count() > 0)
+                        {
+                            DependencyService.Get<IKalectDependencyServices>().DownloadWebAttachments(metaData.AssessmentTrackingNumber, form.FriendlyName, webAttachments);
+                            form.WebAttachments = JsonConvert.SerializeObject(webAttachments);
+                        }
+                    }
+                }
             }
             catch(Exception ex)
             {

@@ -60,8 +60,21 @@ namespace Kalect.Demo
             inspectionList.IsRefreshing = false;
         }
 
+        private void HighlightButton(Button selectedButton)
+        {
+            newButton.BackgroundColor = Color.FromHex("#CBCBCB");
+            inprogressButton.BackgroundColor = Color.FromHex("#CBCBCB");
+            completedButton.BackgroundColor = Color.FromHex("#CBCBCB");
+
+            if (selectedButton != null)
+            {
+                selectedButton.BackgroundColor = Color.FromHex("#C0BF07");
+            }
+        }
+
         async void CompletedButton_Clicked(object sender, EventArgs e)
         {
+            HighlightButton(sender as Button);
             ShowBusy();
             List<AssessmentMetadataEntity> assessments = new List<AssessmentMetadataEntity>();
             assessments = await GetListOfAllAssignedAssessmentsFromDevice();
@@ -73,6 +86,7 @@ namespace Kalect.Demo
 
         async void NewButton_Clicked(object sender, EventArgs e)
         {
+            HighlightButton(sender as Button);
             ShowBusy();
             inspectionList.IsRefreshing = true;
             List<AssessmentMetadataEntity> assessments = new List<AssessmentMetadataEntity>();
@@ -86,6 +100,7 @@ namespace Kalect.Demo
 
         async void InprogressButton_Clicked(object sender, EventArgs e)
         {
+            HighlightButton(sender as Button);
             ShowBusy();
             List<AssessmentMetadataEntity> assessments = new List<AssessmentMetadataEntity>();
             assessments = await GetListOfAllAssignedAssessmentsFromDevice();
@@ -305,7 +320,7 @@ namespace Kalect.Demo
             leadList.Clicked += leadList_Clicked;
             leadList.WidthRequest = 100;
             leadList.HeightRequest = 40;
-            leadList.Text = "Lead";
+            leadList.Text = "Pull";
             leadList.BorderColor = Color.FromHex("#CBCBCB");
             leadList.BorderWidth = 1;
             leadList.BackgroundColor = Color.White;
@@ -433,9 +448,9 @@ namespace Kalect.Demo
                                 {
                                     //syncButton,
                                     deleteList,
-                                    leadList,
-                                    I1List,
-                                    I2List
+                                    leadList//,
+                                    //I1List,
+                                    //I2List
                                 }
                             },
                             new StackLayout
@@ -625,7 +640,7 @@ namespace Kalect.Demo
 
             if (CrossConnectivity.Current.IsConnected) 
             {
-                syncAction.Text = "   Sync   ";  
+                syncAction.Text = "   Push   ";  
                 syncAction.Clicked += SyncAction_Clicked;
             } else {
                 syncAction.Text = "   Offline   ";
